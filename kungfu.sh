@@ -1,15 +1,35 @@
 #!/bin/bash
-cat /var/lib/mss/version
+
+# download sch pls to tmp
+
+source /var/lib/mss/netupdate.conf
+# Set some variables
+LOCALVERSION=`cat /var/lib/mss/version`
+MYSELF=`ssh -p $PORT $USER@$SERVER grep $MYNAME $HOSTLIST | grep -v \^#`
+
+# Get apropriate programm version and full path to it from fileserver
+CUTOMER=`echo "$MYSELF" | awk '{print $2}'`
+VERSION=`echo "$MYSELF" | awk '{print $3}'`
+ROOT=`echo "$MYSELF" | awk '{print $4}'`
+UPDATEDIR=$ROOT/$CUTOMER
+MYIP=`ssh -p $PORT $USER@$SERVER 'echo $SSH_CLIENT | cut -d " " -f 1'`
+
+rsync -HLavcx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/playlists/ /tmp/playlists
+rsync -HLavcx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/schedule.mss /tmp/schedule.mss
+
+# do work
+
+echo "Check version v$VERSION"
 sdb="/tmp/smart_db.dat"
 
 echo -n "" > "$sdb"
 
 # read schedule
-sch=$(cat /var/lib/mss/schedule.mss|sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g'|sed -e 's/ [0-9] /%$%/g'|tr -d "%$%"|sed -e 's/\s\{1,\}/\n/g')
+sch=$(cat /tmp/schedule.mss|sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/ /g'|sed -e 's/ [0-9] /%$%/g'|tr -d "%$%"|sed -e 's/\s\{1,\}/\n/g')
 echo -n "" > /tmp/smart_db.dat
 echo "$sch" | while IFS= read -r line
 do
- curfile="/var/lib/mss/playlists/$line.m3u"
+ curfile="/tmp/playlists/$line.m3u"
  if [ -f $curfile ];
  then
   while read trackline
@@ -38,7 +58,8 @@ do
 done
 
 
-filez=$(find /var/lib/mss/|grep .mp3)
+filez=$(find /var/lib/mss/|grep ."mp3")
+nel=1
 echo "$filez" | while IFS= read -r dumbfile
 do
  ex=0
@@ -58,9 +79,26 @@ do
  done < $sdb
  if (( ex == 0 ))
  then
-  echo "NOT ::: $dumbfile"
+  if (( nel == 1 ))
+  then
+   echo ""
+  fi
+  echo -n "NOT ::: $dumbfile"
   rm -f "$dumbfile"
+  nel=0
+ else
+  if (( nel == 0 ))
+  then
+   echo ""
+  fi
+  echo -n "."
+  nel=1
  fi
 done
+
+# clean it
+
 rm -f "$sdb"
+rm -f "/tmp/schedule.mss"
+rm -rf "/tmp/playlists/"
 find /var/lib/mss/ -type d -empty -delete
