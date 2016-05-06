@@ -14,8 +14,17 @@ ROOT=`echo "$MYSELF" | awk '{print $4}'`
 UPDATEDIR=$ROOT/$CUTOMER
 MYIP=`ssh -p $PORT $USER@$SERVER 'echo $SSH_CLIENT | cut -d " " -f 1'`
 
-rsync -HLavcx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/playlists/ /tmp/playlists
-rsync -HLavcx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/schedule.mss /tmp/schedule.mss
+rsync -HLacx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/playlists/ /tmp/playlists
+rsync -HLacx -e "ssh -p $PORT" $USER@$SERVER:$UPDATEDIR/"$VERSION"_\*/schedule.mss /tmp/schedule.mss
+
+# mssdecode
+
+cd /tmp/playlists
+for i in *.m3u; do
+        cat $i | dos2unix  | sed -e "s|\\\|\/|g" -e "/#/d" -e "/sfk/d" > "${i}__"
+        mv "${i}__" "$i"
+done
+dos2unix -q /tmp/schedule.mss
 
 # do work
 
