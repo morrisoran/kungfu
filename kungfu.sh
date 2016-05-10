@@ -90,14 +90,14 @@ do
  done < $sdb
  if (( ex == 0 ))
  then
+  if (( nel == 0 ))
+  then
+  echo ""
+  fi
   echo "NOT ::: $dumbfile"
   rm -f "$dumbfile"
   nel=1
  else
-  if (( nel == 1 ))
-  then
-   echo ""
-  fi
   echo -n "."
   nel=0
  fi
