@@ -68,7 +68,9 @@ done
 
 
 filez=$(find /var/lib/mss/|grep ."mp3")
-nel=1
+nel=0 
+# 1 - prev was not
+# 0 - prev was .
 echo "$filez" | while IFS= read -r dumbfile
 do
  ex=0
@@ -88,20 +90,16 @@ do
  done < $sdb
  if (( ex == 0 ))
  then
+  echo "NOT ::: $dumbfile"
+  rm -f "$dumbfile"
+  nel=1
+ else
   if (( nel == 1 ))
   then
    echo ""
   fi
-  echo -n "NOT ::: $dumbfile"
-  rm -f "$dumbfile"
-  nel=0
- else
-  if (( nel == 0 ))
-  then
-   echo ""
-  fi
   echo -n "."
-  nel=1
+  nel=0
  fi
 done
 
